@@ -91,3 +91,42 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_procinfo(void)
+{
+  int pid;
+  uint64 addr;
+  struct proc *p;
+  struct procinfo k_info;
+  extern struct proc proc[NPROC];
+
+  argint(0, &pid);
+  argaddr(1, &addr);
+
+  int found = 0;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->pid == pid) {
+      k_info.pid = p->pid;
+      k_info.state = p->state;
+      k_info.sz = p->sz;
+      safestrcpy(k_info.name, p->name, sizeof(k_info.name));
+
+      if(p->parent) k_info.ppid = p->parent->pid;
+      else k_info.ppid = 0;
+
+      found = 1;
+      release(&p->lock);
+      break;
+    }
+    release(&p->lock);
+  }
+
+  if(!found) return -1;
+
+  if(copyout(myproc()->pagetable, addr, (char *)&k_info, sizeof(k_info)) < 0)
+    return -1;
+
+  return 0;
+}
