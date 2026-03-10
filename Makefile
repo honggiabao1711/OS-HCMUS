@@ -208,7 +208,7 @@ UPROGS=\
 	$U/_xargs\
 	$U/_tree\
 	$U/_trace\
-
+	$U/_proctest\
 
 
 
