@@ -296,6 +296,7 @@ kfork(void)
 
   acquire(&wait_lock);
   np->parent = p;
+  np->tracemask = p->tracemask; // them vao day
   release(&wait_lock);
 
   acquire(&np->lock);
