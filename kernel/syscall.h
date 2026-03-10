@@ -22,3 +22,4 @@
 #define SYS_close  21
 #define SYS_trace  22
 #define SYS_procinfo 23
+#define SYS_sleep 24
