@@ -3,50 +3,52 @@
 #include "kernel/param.h"
 #include "user/user.h"
 
-int main(int argc, char* argv[]){
-    if(argc < 2){
-        fprintf(2,"usage: xargs command\n");
-        exit(1);
 
+int main(int argc, char *argv[]) {
+  char buf[512];
+  char *args[MAXARG];
+  int i;
+
+  if (argc < 2) {
+    fprintf(2, "Usage: xargs command [args...]\n");
+    exit(1);
+  }
+
+  for (i = 1; i < argc; i++) {
+    args[i - 1] = argv[i];
+  }
+
+  while (1) {
+    int n = 0;
+    while (1) {
+      char c;
+      int r = read(0, &c, 1);
+      if (r <= 0) exit(0); 
+
+      if (c == ' ' || c == '\t' || c == '\n') {
+        if (n == 0) continue; 
+        break; 
+      }
+
+      if (n < sizeof(buf) - 1) {
+        buf[n++] = c;
+      }
+    }
+    buf[n] = 0; 
+
+    int pid = fork();
+    if (pid < 0) {
+      exit(1);
     }
 
-    char buf[512];   // buffer chua 1 dong  input
-    char *cmd_argv[MAXARG]; // argv cho exec
-    int i;
-
-    // copy command arguments cua command( bo argv[0] = xargs)
-    for( i = 1; i < argc; i++){
-        cmd_argv[i-1] = argv[i];
+    if (pid == 0) {
+      args[argc - 1] = buf; 
+      args[argc] = 0;      
+      exec(args[0], args);
+      exit(1);
+    } else {
+      wait(0); 
     }
-
-    int base_argc = argc -1; // so argument co dinh ban dau
-
-    int n = 0;  // do dai dong hien tai
-    char c;
-
-    while(read(0,&c, 1) > 0){
-        if(c == '\n'){
-            buf[n] = 0;  // ket thuc chuoi
-
-            cmd_argv[base_argc] = buf; // them dong vao cuoi argv
-            cmd_argv[base_argc+1] = 0; // ket thuc mang argv
-
-        
-
-            if(fork() == 0){
-                exec(cmd_argv[0], cmd_argv);
-                fprintf(2, "exec failed\n");
-                exit(1);
-            }else{
-                wait(0);
-            }
-
-            n = 0;  // reset buffer cho dong moi
-
-        }else{
-            buf[n++] = c;
-        }
-    }
-    exit(0);
+  }
+  exit(0);
 }
-
